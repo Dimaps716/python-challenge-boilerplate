@@ -31,9 +31,10 @@ class BaseGrader:
             self.logger.error("Grader is missing `evaluation_function_name` attribute",)
             sys.exit(1)
 
-        test_cases = self.get_test_cases()
         for sol in self.solutions:
             errors, passed = 0, 0
+            # Test cases are generated for each solution to avoid mutation between solutions
+            test_cases = self.get_test_cases()
             for test in test_cases:
                 self.setup(sol)
                 if self.eval_solution(test):
@@ -61,7 +62,9 @@ class BaseGrader:
         try:
             self.f = getattr(self.sol, self.evaluation_function_name) # pylint: disable = C0103
         except AttributeError:
-            self.logger.error("Cannot find function %s in solution", self.evaluation_function_name)
+            self.logger.error(
+                "Cannot find function %s in %s", self.evaluation_function_name, self.__get_solution_full_name(solution)
+            )
             sys.exit(1)
 
     def get_test_cases(self) -> List[IOPair]:
@@ -71,7 +74,7 @@ class BaseGrader:
     def eval_solution(self, test_case: IOPair) -> bool:
         """Evaluates solution against the given test case."""
         input_data, want = test_case
-        if type(input_data) in {list, tuple}:
+        if isinstance(input_data, tuple):
             got = self.f(*input_data)
         else:
             got = self.f(input_data)
